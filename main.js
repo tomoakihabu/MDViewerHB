@@ -51,7 +51,7 @@ marked.setOptions({ breaks: true, gfm: true });
 /* ── CodeMirror 5 init ───────────────────────────────────────── */
 var cm = CodeMirror.fromTextArea(document.getElementById('editor-textarea'), {
     mode: 'markdown',
-    theme: appTheme === 'dark' ? 'onedark' : 'default',
+    theme: appTheme === 'dark' ? 'dracula' : 'default',
     lineNumbers: true,
     lineWrapping: true,
     autofocus: false,
@@ -197,7 +197,7 @@ var SUN_SVG  = '<circle cx="12" cy="12" r="5"></circle>'
 
 function applyTheme(theme) {
     body.setAttribute('data-theme', theme);
-    cm.setOption('theme', theme === 'dark' ? 'onedark' : 'default');
+    cm.setOption('theme', theme === 'dark' ? 'dracula' : 'default');
     themeIcon.innerHTML = theme === 'dark' ? MOON_SVG : SUN_SVG;
     if (hljsStyle) {
         hljsStyle.href = theme === 'dark'
