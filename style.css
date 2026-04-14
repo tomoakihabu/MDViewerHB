@@ -261,6 +261,7 @@ body {
 @media (min-width: 768px) {
     .pane {
         display: block !important;
+        flex: 1;
     }
 }
 
@@ -393,22 +394,33 @@ body {
 .menu-item + .menu-item { border-top: 1px solid var(--border); }
 
 /* ============================================================
-   CodeMirror Overrides
+   CodeMirror 5 Overrides
    ============================================================ */
-.cm-editor {
+.CodeMirror {
     height: 100% !important;
-    font-family: var(--font-mono);
-    font-size: 15px;
+    font-family: var(--font-mono) !important;
+    font-size: 14px;
     line-height: 1.7;
+    background: var(--bg) !important;
 }
 
-.cm-scroller {
-    overflow: auto !important;
-    -webkit-overflow-scrolling: touch !important;
+[data-theme="light"] .CodeMirror {
+    background: var(--surface-solid) !important;
+    color: var(--text) !important;
 }
 
-.cm-editor.cm-focused {
-    outline: none;
+.CodeMirror-scroll {
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Editor pane fills height */
+#editor-pane .CodeMirror {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+}
+
+#editor-pane {
+    position: relative;
 }
 
 /* ============================================================
