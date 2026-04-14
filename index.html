@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="MDViewerHB">
+    <meta name="theme-color" content="#0d1117">
+    <meta name="description" content="Markdown Viewer & Editor — MDViewerHB">
+    <title>MDViewerHB</title>
+    <link rel="manifest" href="manifest.json">
+    <!-- Apple touch icons -->
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body data-theme="dark">
+    <div id="app">
+
+        <!-- Header -->
+        <header class="glass" id="app-header">
+            <div class="logo">
+                <span class="logo-icon">✦</span>
+                <span class="logo-text">MDViewerHB</span>
+            </div>
+            <div class="header-actions">
+                <button id="theme-toggle" class="icon-btn" aria-label="テーマ切替" title="テーマ切替">
+                    <svg id="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                </button>
+                <button id="save-btn" class="icon-btn primary-btn" aria-label="保存" title="保存 (Ctrl+S)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                </button>
+                <button id="menu-btn" class="icon-btn" aria-label="メニュー" title="メニュー">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Mobile Tab Bar -->
+        <div class="tab-bar" id="tab-bar">
+            <button class="tab-btn active" id="tab-edit" aria-label="編集">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+                <span>編集</span>
+            </button>
+            <button class="tab-btn" id="tab-preview" aria-label="プレビュー">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                <span>プレビュー</span>
+            </button>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="toolbar glass" id="toolbar">
+            <div class="toolbar-inner">
+                <button class="tool-btn" data-action="bold" aria-label="太字"><b>B</b></button>
+                <button class="tool-btn" data-action="italic" aria-label="斜体"><i>I</i></button>
+                <button class="tool-btn" data-action="strikethrough" aria-label="打ち消し">S̶</button>
+                <div class="tool-sep"></div>
+                <button class="tool-btn" data-action="h1" aria-label="見出し1">H1</button>
+                <button class="tool-btn" data-action="h2" aria-label="見出し2">H2</button>
+                <button class="tool-btn" data-action="h3" aria-label="見出し3">H3</button>
+                <div class="tool-sep"></div>
+                <button class="tool-btn" data-action="ul" aria-label="箇条書き">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><circle cx="4" cy="6" r="1.5" fill="currentColor" stroke="none"></circle><circle cx="4" cy="12" r="1.5" fill="currentColor" stroke="none"></circle><circle cx="4" cy="18" r="1.5" fill="currentColor" stroke="none"></circle></svg>
+                </button>
+                <button class="tool-btn" data-action="ol" aria-label="番号付き">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="10" y1="6" x2="21" y2="6"></line><line x1="10" y1="12" x2="21" y2="12"></line><line x1="10" y1="18" x2="21" y2="18"></line><path d="M4 6h1v4" stroke="currentColor" stroke-width="1.5"></path><path d="M4 10h2" stroke="currentColor" stroke-width="1.5"></path><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1.5" stroke="currentColor" stroke-width="1.5"></path></svg>
+                </button>
+                <button class="tool-btn" data-action="task" aria-label="タスク">☑</button>
+                <div class="tool-sep"></div>
+                <button class="tool-btn" data-action="code" aria-label="コード">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+                </button>
+                <button class="tool-btn" data-action="link" aria-label="リンク">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                </button>
+                <button class="tool-btn" data-action="quote" aria-label="引用">❝</button>
+            </div>
+        </div>
+
+        <!-- Main -->
+        <main id="main-area">
+            <!-- Editor Pane -->
+            <div id="editor-pane" class="pane active">
+                <div id="editor-container"></div>
+            </div>
+
+            <!-- Preview Pane -->
+            <div id="preview-pane" class="pane">
+                <article id="preview-content" class="markdown-body"></article>
+            </div>
+
+            <!-- Desktop Resizer -->
+            <div id="resizer" class="resizer"></div>
+        </main>
+
+        <!-- Footer / Status bar -->
+        <footer class="statusbar glass">
+            <span id="char-count">0 文字</span>
+            <span id="word-count">0 単語</span>
+            <span class="spacer"></span>
+            <span class="lang-badge">Markdown</span>
+        </footer>
+
+        <!-- Dropdown Menu -->
+        <div id="menu-dropdown" class="dropdown glass" hidden>
+            <button id="menu-new" class="menu-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                新規作成
+            </button>
+            <button id="menu-open" class="menu-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                ファイルを開く
+            </button>
+            <button id="menu-save-txt" class="menu-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline></svg>
+                .md として保存
+            </button>
+            <button id="menu-export" class="menu-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                HTML でエクスポート
+            </button>
+        </div>
+
+        <!-- File input for opening files -->
+        <input type="file" id="file-input" accept=".md,.txt,.markdown" style="display:none">
+    </div>
+
+    <script type="module" src="main.js"></script>
+    <script>
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').catch(err => console.warn('SW reg failed:', err));
+            });
+        }
+    </script>
+</body>
+</html>
