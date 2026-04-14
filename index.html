@@ -97,6 +97,29 @@
         </div>
     </div>
 
+    <!-- URL Bar -->
+    <div id="url-bar" class="url-bar glass">
+        <svg class="url-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input
+            id="url-input"
+            type="url"
+            placeholder="URLを入力してMarkdownを読み込む（Google Drive, GitHub など）"
+            autocomplete="off"
+            autocorrect="off"
+            autocapitalize="off"
+            spellcheck="false"
+        >
+        <button id="url-load-btn" class="url-btn" aria-label="読み込む">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+        </button>
+        <span id="url-status" class="url-status"></span>
+    </div>
+
     <!-- Main -->
     <main id="main-area">
         <div id="editor-pane" class="pane active">

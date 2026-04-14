@@ -13,37 +13,10 @@ if (document.readyState === 'loading') {
 
 function initApp() {
 
-var DEFAULT_CONTENT = '# MDViewerHB へようこそ 👋\n\n'
-    + 'このアプリはMarkdown形式での**閲覧**と**編集**に対応しています。\n'
-    + 'iPhoneのホーム画面に追加することで、アプリとして使えます。\n\n'
-    + '## 対応機能\n\n'
-    + '- **リアルタイムプレビュー**\n'
-    + '- **シンタックスハイライト** (コードブロック)\n'
-    + '- **ダーク / ライトモード** 切替\n'
-    + '- **ローカル自動保存** (LocalStorage)\n'
-    + '- **ファイルの開く / 保存 / HTMLエクスポート**\n\n'
-    + '## Markdown サンプル\n\n'
-    + '### コードブロック\n\n'
-    + '```javascript\n'
-    + 'const greet = (name) => `Hello, ${name}!`;\n'
-    + 'console.log(greet("MDViewerHB"));\n'
-    + '```\n\n'
-    + '### テーブル\n\n'
-    + '| 機能         | 対応   |\n'
-    + '| :----------- | :----: |\n'
-    + '| テーブル     | ✅     |\n'
-    + '| タスクリスト | ✅     |\n\n'
-    + '### タスクリスト\n\n'
-    + '- [x] Markdown エディタ\n'
-    + '- [x] リアルタイムプレビュー\n'
-    + '- [ ] Mermaid 対応 (予定)\n\n'
-    + '> 📱 iPhoneで「共有 → ホーム画面に追加」でアプリとして起動できます！\n';
-
 /* ── App state ──────────────────────────────────────────────── */
 var appTheme   = localStorage.getItem('mdvhb-theme') || 'dark';
-var appContent = localStorage.getItem('mdvhb-content');
-if (appContent === null) { appContent = DEFAULT_CONTENT; }
-var menuOpen = false;
+var appContent = localStorage.getItem('mdvhb-content') || '';
+var menuOpen   = false;
 
 /* ── DOM refs ────────────────────────────────────────────────── */
 var body         = document.body;
@@ -57,16 +30,20 @@ var tabEdit      = document.getElementById('tab-edit');
 var tabPreview   = document.getElementById('tab-preview');
 var resizer      = document.getElementById('resizer');
 var mainArea     = document.getElementById('main-area');
-var menuDropdown = document.getElementById('menu-dropdown');
-var fileInput    = document.getElementById('file-input');
-var hljsStyle    = document.getElementById('hljs-style');
-var themeToggle  = document.getElementById('theme-toggle');
-var saveBtn      = document.getElementById('save-btn');
-var menuBtn      = document.getElementById('menu-btn');
-var menuNewBtn   = document.getElementById('menu-new');
-var menuOpenBtn  = document.getElementById('menu-open');
-var menuSaveBtn  = document.getElementById('menu-save-txt');
+var menuDropdown  = document.getElementById('menu-dropdown');
+var fileInput     = document.getElementById('file-input');
+var hljsStyle     = document.getElementById('hljs-style');
+var themeToggle   = document.getElementById('theme-toggle');
+var saveBtn       = document.getElementById('save-btn');
+var menuBtn       = document.getElementById('menu-btn');
+var menuNewBtn    = document.getElementById('menu-new');
+var menuOpenBtn   = document.getElementById('menu-open');
+var menuSaveBtn   = document.getElementById('menu-save-txt');
 var menuExportBtn = document.getElementById('menu-export');
+var urlInput      = document.getElementById('url-input');
+var urlLoadBtn    = document.getElementById('url-load-btn');
+var urlBar        = document.getElementById('url-bar');
+var urlStatus     = document.getElementById('url-status');
 
 /* ── marked.js setup ─────────────────────────────────────────── */
 marked.setOptions({ breaks: true, gfm: true });
@@ -110,6 +87,100 @@ function updateStats(content) {
     charCount.textContent = content.length + ' 文字';
     var words = content.trim() ? content.trim().split(/\s+/).length : 0;
     wordCount.textContent = words + ' 単語';
+}
+
+/* ── URL fetch ───────────────────────────────────────────────── */
+/* Supported URL patterns:
+   - Google Drive: drive.google.com/file/d/{ID}/view  →  direct download via proxy
+   - GitHub raw:   github.com/user/repo/blob/...      →  raw.githubusercontent.com
+   - Raw URLs:     any .md URL via CORS proxy
+*/
+var CORS_PROXY = 'https://corsproxy.io/?url=';
+
+function normalizeUrl(rawUrl) {
+    rawUrl = rawUrl.trim();
+
+    // Google Drive: /file/d/{ID}/view or /file/d/{ID}/edit or ?id={ID}
+    var driveMatch = rawUrl.match(/drive\.google\.com\/file\/d\/([^\/\?]+)/);
+    if (driveMatch) {
+        return CORS_PROXY + encodeURIComponent(
+            'https://drive.google.com/uc?export=download&id=' + driveMatch[1]
+        );
+    }
+
+    // Google Drive uc?id= format (already a download link)
+    var driveUcMatch = rawUrl.match(/drive\.google\.com\/uc\?.*[?&]id=([^&]+)/);
+    if (driveUcMatch) {
+        return CORS_PROXY + encodeURIComponent(
+            'https://drive.google.com/uc?export=download&id=' + driveUcMatch[1]
+        );
+    }
+
+    // GitHub blob → raw
+    var ghMatch = rawUrl.match(/^https?:\/\/github\.com\/([^\/]+)\/([^\/]+)\/blob\/(.+)$/);
+    if (ghMatch) {
+        return 'https://raw.githubusercontent.com/' + ghMatch[1] + '/' + ghMatch[2] + '/' + ghMatch[3];
+    }
+
+    // GitHub Gist
+    if (/gist\.github\.com/.test(rawUrl) && !/\/raw\//.test(rawUrl)) {
+        return CORS_PROXY + encodeURIComponent(rawUrl + '/raw');
+    }
+
+    // Already a raw URL — add CORS proxy for non-raw external URLs
+    if (/^https?:\/\/raw\.githubusercontent\.com/.test(rawUrl)) {
+        return rawUrl; // no proxy needed
+    }
+
+    // All other URLs: use CORS proxy
+    return CORS_PROXY + encodeURIComponent(rawUrl);
+}
+
+function setUrlStatus(msg, isError) {
+    if (!urlStatus) return;
+    urlStatus.textContent = msg;
+    urlStatus.className   = 'url-status' + (isError ? ' url-status--error' : ' url-status--ok');
+    if (msg) {
+        setTimeout(function() { urlStatus.textContent = ''; urlStatus.className = 'url-status'; }, 4000);
+    }
+}
+
+function fetchFromUrl(rawUrl) {
+    if (!rawUrl || !rawUrl.trim()) return;
+    var fetchUrl = normalizeUrl(rawUrl);
+
+    setUrlStatus('読み込み中…', false);
+    urlBar.classList.add('loading');
+
+    fetch(fetchUrl)
+        .then(function(res) {
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            return res.text();
+        })
+        .then(function(text) {
+            cm.setValue(text);
+            cm.focus();
+            setUrlStatus('✓ 読み込み完了', false);
+            urlBar.classList.remove('loading');
+            localStorage.removeItem('mdvhb-content'); // don't persist remote content
+        })
+        .catch(function(err) {
+            setUrlStatus('エラー: ' + err.message + '（ファイルが公開共有されているか確認してください）', true);
+            urlBar.classList.remove('loading');
+        });
+}
+
+/* URL bar events */
+if (urlLoadBtn) {
+    urlLoadBtn.addEventListener('click', function() {
+        fetchFromUrl(urlInput.value);
+    });
+}
+
+if (urlInput) {
+    urlInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') fetchFromUrl(urlInput.value);
+    });
 }
 
 /* ── Theme ───────────────────────────────────────────────────── */
