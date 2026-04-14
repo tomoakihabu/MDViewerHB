@@ -14,42 +14,42 @@ if (document.readyState === 'loading') {
 function initApp() {
 
 /* ── App state ──────────────────────────────────────────────── */
-var appTheme   = localStorage.getItem('mdvhb-theme') || 'dark';
-var appContent = localStorage.getItem('mdvhb-content') || '';
-var menuOpen   = false;
+let appTheme     = localStorage.getItem('mdvhb-theme') || 'dark';
+const appContent = localStorage.getItem('mdvhb-content') || '';
+let menuOpen     = false;
 
 /* ── DOM refs ────────────────────────────────────────────────── */
-var body         = document.body;
-var themeIcon    = document.getElementById('theme-icon');
-var previewEl    = document.getElementById('preview-content');
-var charCount    = document.getElementById('char-count');
-var wordCount    = document.getElementById('word-count');
-var editorPane   = document.getElementById('editor-pane');
-var previewPane  = document.getElementById('preview-pane');
-var tabEdit      = document.getElementById('tab-edit');
-var tabPreview   = document.getElementById('tab-preview');
-var resizer      = document.getElementById('resizer');
-var mainArea     = document.getElementById('main-area');
-var menuDropdown  = document.getElementById('menu-dropdown');
-var fileInput     = document.getElementById('file-input');
-var hljsStyle     = document.getElementById('hljs-style');
-var themeToggle   = document.getElementById('theme-toggle');
-var saveBtn       = document.getElementById('save-btn');
-var menuBtn       = document.getElementById('menu-btn');
-var menuNewBtn    = document.getElementById('menu-new');
-var menuOpenBtn   = document.getElementById('menu-open');
-var menuSaveBtn   = document.getElementById('menu-save-txt');
-var menuExportBtn = document.getElementById('menu-export');
-var urlInput      = document.getElementById('url-input');
-var urlLoadBtn    = document.getElementById('url-load-btn');
-var urlBar        = document.getElementById('url-bar');
-var urlStatus     = document.getElementById('url-status');
+const body          = document.body;
+const themeIcon     = document.getElementById('theme-icon');
+const previewEl     = document.getElementById('preview-content');
+const charCount     = document.getElementById('char-count');
+const wordCount     = document.getElementById('word-count');
+const editorPane    = document.getElementById('editor-pane');
+const previewPane   = document.getElementById('preview-pane');
+const tabEdit       = document.getElementById('tab-edit');
+const tabPreview    = document.getElementById('tab-preview');
+const resizer       = document.getElementById('resizer');
+const mainArea      = document.getElementById('main-area');
+const menuDropdown  = document.getElementById('menu-dropdown');
+const fileInput     = document.getElementById('file-input');
+const hljsStyle     = document.getElementById('hljs-style');
+const themeToggle   = document.getElementById('theme-toggle');
+const saveBtn       = document.getElementById('save-btn');
+const menuBtn       = document.getElementById('menu-btn');
+const menuNewBtn    = document.getElementById('menu-new');
+const menuOpenBtn   = document.getElementById('menu-open');
+const menuSaveBtn   = document.getElementById('menu-save-txt');
+const menuExportBtn = document.getElementById('menu-export');
+const urlInput      = document.getElementById('url-input');
+const urlLoadBtn    = document.getElementById('url-load-btn');
+const urlBar        = document.getElementById('url-bar');
+const urlStatus     = document.getElementById('url-status');
 
 /* ── marked.js setup ─────────────────────────────────────────── */
 marked.setOptions({ breaks: true, gfm: true });
 
 /* ── CodeMirror 5 init ───────────────────────────────────────── */
-var cm = CodeMirror.fromTextArea(document.getElementById('editor-textarea'), {
+const cm = CodeMirror.fromTextArea(document.getElementById('editor-textarea'), {
     mode: 'markdown',
     theme: appTheme === 'dark' ? 'dracula' : 'default',
     lineNumbers: true,
@@ -57,23 +57,9 @@ var cm = CodeMirror.fromTextArea(document.getElementById('editor-textarea'), {
     autofocus: false,
     indentWithTabs: false,
     tabSize: 2,
-    extraKeys: {
-        'Ctrl-S': function() { saveFile(); },
-        'Cmd-S':  function() { saveFile(); }
-    }
 });
 
 cm.setValue(appContent);
-
-cm.on('change', function() {
-    var content = cm.getValue();
-    renderPreview(content);
-    updateStats(content);
-    localStorage.setItem('mdvhb-content', content);
-});
-
-/* Force CodeMirror to recalculate layout */
-setTimeout(function() { cm.refresh(); }, 200);
 
 /* ── Rendering ───────────────────────────────────────────────── */
 function renderPreview(content) {
@@ -85,9 +71,18 @@ function renderPreview(content) {
 
 function updateStats(content) {
     charCount.textContent = content.length + ' 文字';
-    var words = content.trim() ? content.trim().split(/\s+/).length : 0;
+    const words = content.trim() ? content.trim().split(/\s+/).length : 0;
     wordCount.textContent = words + ' 単語';
 }
+
+let previewTimer;
+cm.on('change', function() {
+    const content = cm.getValue();
+    updateStats(content);
+    localStorage.setItem('mdvhb-content', content);
+    clearTimeout(previewTimer);
+    previewTimer = setTimeout(function() { renderPreview(content); }, 150);
+});
 
 /* ── URL fetch ───────────────────────────────────────────────── */
 /* Supported URL patterns:
@@ -95,13 +90,13 @@ function updateStats(content) {
    - GitHub raw:   github.com/user/repo/blob/...      →  raw.githubusercontent.com
    - Raw URLs:     any .md URL via CORS proxy
 */
-var CORS_PROXY = 'https://corsproxy.io/?url=';
+const CORS_PROXY = 'https://corsproxy.io/?url=';
 
 function normalizeUrl(rawUrl) {
     rawUrl = rawUrl.trim();
 
-    // Google Drive: /file/d/{ID}/view or /file/d/{ID}/edit or ?id={ID}
-    var driveMatch = rawUrl.match(/drive\.google\.com\/file\/d\/([^\/\?]+)/);
+    // Google Drive: /file/d/{ID}/view or /file/d/{ID}/edit
+    const driveMatch = rawUrl.match(/drive\.google\.com\/file\/d\/([^\/\?]+)/);
     if (driveMatch) {
         return CORS_PROXY + encodeURIComponent(
             'https://drive.google.com/uc?export=download&id=' + driveMatch[1]
@@ -109,7 +104,7 @@ function normalizeUrl(rawUrl) {
     }
 
     // Google Drive uc?id= format (already a download link)
-    var driveUcMatch = rawUrl.match(/drive\.google\.com\/uc\?.*[?&]id=([^&]+)/);
+    const driveUcMatch = rawUrl.match(/drive\.google\.com\/uc\?.*[?&]id=([^&]+)/);
     if (driveUcMatch) {
         return CORS_PROXY + encodeURIComponent(
             'https://drive.google.com/uc?export=download&id=' + driveUcMatch[1]
@@ -117,7 +112,7 @@ function normalizeUrl(rawUrl) {
     }
 
     // GitHub blob → raw
-    var ghMatch = rawUrl.match(/^https?:\/\/github\.com\/([^\/]+)\/([^\/]+)\/blob\/(.+)$/);
+    const ghMatch = rawUrl.match(/^https?:\/\/github\.com\/([^\/]+)\/([^\/]+)\/blob\/(.+)$/);
     if (ghMatch) {
         return 'https://raw.githubusercontent.com/' + ghMatch[1] + '/' + ghMatch[2] + '/' + ghMatch[3];
     }
@@ -127,9 +122,9 @@ function normalizeUrl(rawUrl) {
         return CORS_PROXY + encodeURIComponent(rawUrl + '/raw');
     }
 
-    // Already a raw URL — add CORS proxy for non-raw external URLs
+    // Raw GitHub URLs — no proxy needed
     if (/^https?:\/\/raw\.githubusercontent\.com/.test(rawUrl)) {
-        return rawUrl; // no proxy needed
+        return rawUrl;
     }
 
     // All other URLs: use CORS proxy
@@ -147,7 +142,7 @@ function setUrlStatus(msg, isError) {
 
 function fetchFromUrl(rawUrl) {
     if (!rawUrl || !rawUrl.trim()) return;
-    var fetchUrl = normalizeUrl(rawUrl);
+    const fetchUrl = normalizeUrl(rawUrl);
 
     setUrlStatus('読み込み中…', false);
     urlBar.classList.add('loading');
@@ -172,9 +167,7 @@ function fetchFromUrl(rawUrl) {
 
 /* URL bar events */
 if (urlLoadBtn) {
-    urlLoadBtn.addEventListener('click', function() {
-        fetchFromUrl(urlInput.value);
-    });
+    urlLoadBtn.addEventListener('click', function() { fetchFromUrl(urlInput.value); });
 }
 
 if (urlInput) {
@@ -184,8 +177,8 @@ if (urlInput) {
 }
 
 /* ── Theme ───────────────────────────────────────────────────── */
-var MOON_SVG = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>';
-var SUN_SVG  = '<circle cx="12" cy="12" r="5"></circle>'
+const MOON_SVG = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>';
+const SUN_SVG  = '<circle cx="12" cy="12" r="5"></circle>'
     + '<line x1="12" y1="1" x2="12" y2="3"></line>'
     + '<line x1="12" y1="21" x2="12" y2="23"></line>'
     + '<line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>'
@@ -195,14 +188,15 @@ var SUN_SVG  = '<circle cx="12" cy="12" r="5"></circle>'
     + '<line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>'
     + '<line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>';
 
+const HLJS_DARK  = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css';
+const HLJS_LIGHT = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css';
+
 function applyTheme(theme) {
     body.setAttribute('data-theme', theme);
     cm.setOption('theme', theme === 'dark' ? 'dracula' : 'default');
     themeIcon.innerHTML = theme === 'dark' ? MOON_SVG : SUN_SVG;
     if (hljsStyle) {
-        hljsStyle.href = theme === 'dark'
-            ? 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css'
-            : 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css';
+        hljsStyle.href = theme === 'dark' ? HLJS_DARK : HLJS_LIGHT;
     }
     localStorage.setItem('mdvhb-theme', theme);
     renderPreview(cm.getValue());
@@ -231,7 +225,7 @@ tabPreview.addEventListener('click', function() {
 });
 
 /* ── Desktop resizer ─────────────────────────────────────────── */
-var resizing = false;
+let resizing = false;
 
 resizer.addEventListener('mousedown', function() {
     resizing = true;
@@ -242,8 +236,8 @@ resizer.addEventListener('mousedown', function() {
 
 document.addEventListener('mousemove', function(e) {
     if (!resizing) return;
-    var rect = mainArea.getBoundingClientRect();
-    var pct  = (e.clientX - rect.left) / rect.width * 100;
+    const rect = mainArea.getBoundingClientRect();
+    const pct  = (e.clientX - rect.left) / rect.width * 100;
     if (pct > 15 && pct < 85) {
         editorPane.style.flex  = '0 0 ' + pct + '%';
         previewPane.style.flex = '0 0 ' + (100 - pct) + '%';
@@ -268,16 +262,16 @@ document.querySelectorAll('.tool-btn[data-action]').forEach(function(btn) {
 });
 
 function applyFormat(action) {
-    var sel  = cm.getSelection();
-    var cur  = cm.getCursor();
-    var line = cm.getLine(cur.line) || '';
+    const sel  = cm.getSelection();
+    const cur  = cm.getCursor();
+    const line = cm.getLine(cur.line) || '';
 
-    var wrapMap = {
+    const wrapMap = {
         bold:          { w: '**', fallback: '太字テキスト' },
         italic:        { w: '*',  fallback: '斜体テキスト' },
         strikethrough: { w: '~~', fallback: 'テキスト' }
     };
-    var prefixMap = {
+    const prefixMap = {
         h1:    '# ',
         h2:    '## ',
         h3:    '### ',
@@ -288,11 +282,15 @@ function applyFormat(action) {
     };
 
     if (wrapMap[action]) {
-        var w = wrapMap[action].w;
-        var text = sel || wrapMap[action].fallback;
-        cm.replaceSelection(w + text + w);
+        const w = wrapMap[action].w;
+        // Toggle: unwrap if selection is already wrapped
+        if (sel && sel.startsWith(w) && sel.endsWith(w) && sel.length > w.length * 2) {
+            cm.replaceSelection(sel.slice(w.length, -w.length));
+        } else {
+            cm.replaceSelection(w + (sel || wrapMap[action].fallback) + w);
+        }
     } else if (prefixMap[action]) {
-        var p = prefixMap[action];
+        const p = prefixMap[action];
         if (line.indexOf(p) === 0) {
             cm.replaceRange('', { line: cur.line, ch: 0 }, { line: cur.line, ch: p.length });
         } else {
@@ -309,12 +307,12 @@ function applyFormat(action) {
 
 /* ── File operations ─────────────────────────────────────────── */
 function saveFile() {
-    var content = cm.getValue();
-    var blob    = new Blob([content], { type: 'text/markdown;charset=utf-8' });
-    var url     = URL.createObjectURL(blob);
-    var a       = document.createElement('a');
-    a.href      = url;
-    a.download  = 'document.md';
+    const content = cm.getValue();
+    const blob    = new Blob([content], { type: 'text/markdown;charset=utf-8' });
+    const url     = URL.createObjectURL(blob);
+    const a       = document.createElement('a');
+    a.href        = url;
+    a.download    = 'document.md';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -322,17 +320,17 @@ function saveFile() {
 }
 
 function exportHtml() {
-    var html = '<!DOCTYPE html>\n<html lang="ja"><head><meta charset="UTF-8"><title>Exported</title>'
+    const html = '<!DOCTYPE html>\n<html lang="ja"><head><meta charset="UTF-8"><title>Exported</title>'
         + '<style>body{font-family:-apple-system,sans-serif;max-width:800px;margin:40px auto;padding:0 20px;line-height:1.7}'
         + 'pre{background:#f6f8fa;padding:16px;border-radius:8px;overflow:auto}'
         + 'blockquote{border-left:4px solid #58a6ff;padding-left:1em;color:#666}'
         + 'table{border-collapse:collapse;width:100%}th,td{padding:8px 12px;border:1px solid #d0d7de}'
         + 'img{max-width:100%}</style></head><body>'
         + previewEl.innerHTML + '</body></html>';
-    var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-    var url  = URL.createObjectURL(blob);
-    var a    = document.createElement('a');
-    a.href   = url;
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
     a.download = 'document.html';
     document.body.appendChild(a);
     a.click();
@@ -381,18 +379,21 @@ menuExportBtn.addEventListener('click', function() {
 });
 
 fileInput.addEventListener('change', function(e) {
-    var file = e.target.files[0];
+    const file = e.target.files[0];
     if (!file) return;
-    var reader = new FileReader();
+    const reader = new FileReader();
     reader.onload = function(evt) {
         cm.setValue(evt.target.result);
         cm.focus();
+    };
+    reader.onerror = function() {
+        alert('ファイルの読み込みに失敗しました');
     };
     reader.readAsText(file);
     e.target.value = '';
 });
 
-/* ── Keyboard shortcut ───────────────────────────────────────── */
+/* ── Keyboard shortcuts ──────────────────────────────────────── */
 document.addEventListener('keydown', function(e) {
     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
@@ -402,9 +403,15 @@ document.addEventListener('keydown', function(e) {
 
 /* ── Init ────────────────────────────────────────────────────── */
 applyTheme(appTheme);
-renderPreview(appContent);
 updateStats(appContent);
 editorPane.classList.add('active');
 setTimeout(function() { cm.refresh(); }, 300);
 
 } /* end initApp() */
+
+/* ── Service Worker ──────────────────────────────────────────── */
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+        navigator.serviceWorker.register('sw.js').catch(function() {});
+    });
+}
