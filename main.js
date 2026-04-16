@@ -13,10 +13,13 @@ if (document.readyState === 'loading') {
 
 function initApp() {
 
+/* ── Storage keys ────────────────────────────────────────────── */
+const STORAGE_THEME   = 'mdvhb-theme';
+const STORAGE_CONTENT = 'mdvhb-content';
+
 /* ── App state ──────────────────────────────────────────────── */
-let appTheme     = localStorage.getItem('mdvhb-theme') || 'dark';
-const appContent = localStorage.getItem('mdvhb-content') || '';
-let menuOpen     = false;
+let appTheme = localStorage.getItem(STORAGE_THEME) || 'dark';
+let menuOpen = false;
 
 /* ── DOM refs ────────────────────────────────────────────────── */
 const body          = document.body;
@@ -59,7 +62,7 @@ const cm = CodeMirror.fromTextArea(document.getElementById('editor-textarea'), {
     tabSize: 2,
 });
 
-cm.setValue(appContent);
+cm.setValue(localStorage.getItem(STORAGE_CONTENT) || '');
 
 /* ── Rendering ───────────────────────────────────────────────── */
 function renderPreview(content) {
@@ -79,9 +82,11 @@ let previewTimer;
 cm.on('change', function() {
     const content = cm.getValue();
     updateStats(content);
-    localStorage.setItem('mdvhb-content', content);
     clearTimeout(previewTimer);
-    previewTimer = setTimeout(function() { renderPreview(content); }, 150);
+    previewTimer = setTimeout(function() {
+        localStorage.setItem(STORAGE_CONTENT, content);
+        renderPreview(content);
+    }, 150);
 });
 
 /* ── URL fetch ───────────────────────────────────────────────── */
@@ -155,9 +160,12 @@ function fetchFromUrl(rawUrl) {
         .then(function(text) {
             cm.setValue(text);
             cm.focus();
+            // Cancel the debounce triggered by setValue — remote content should not be persisted
+            clearTimeout(previewTimer);
+            renderPreview(text);
+            localStorage.removeItem(STORAGE_CONTENT);
             setUrlStatus('✓ 読み込み完了', false);
             urlBar.classList.remove('loading');
-            localStorage.removeItem('mdvhb-content'); // don't persist remote content
         })
         .catch(function(err) {
             setUrlStatus('エラー: ' + err.message + '（ファイルが公開共有されているか確認してください）', true);
@@ -198,7 +206,7 @@ function applyTheme(theme) {
     if (hljsStyle) {
         hljsStyle.href = theme === 'dark' ? HLJS_DARK : HLJS_LIGHT;
     }
-    localStorage.setItem('mdvhb-theme', theme);
+    localStorage.setItem(STORAGE_THEME, theme);
     renderPreview(cm.getValue());
 }
 
@@ -254,6 +262,21 @@ document.addEventListener('mouseup', function() {
 });
 
 /* ── Toolbar ─────────────────────────────────────────────────── */
+const WRAP_MAP = {
+    bold:          { w: '**', fallback: '太字テキスト' },
+    italic:        { w: '*',  fallback: '斜体テキスト' },
+    strikethrough: { w: '~~', fallback: 'テキスト' }
+};
+const PREFIX_MAP = {
+    h1:    '# ',
+    h2:    '## ',
+    h3:    '### ',
+    ul:    '- ',
+    ol:    '1. ',
+    task:  '- [ ] ',
+    quote: '> '
+};
+
 document.querySelectorAll('.tool-btn[data-action]').forEach(function(btn) {
     btn.addEventListener('click', function() {
         applyFormat(btn.getAttribute('data-action'));
@@ -266,31 +289,15 @@ function applyFormat(action) {
     const cur  = cm.getCursor();
     const line = cm.getLine(cur.line) || '';
 
-    const wrapMap = {
-        bold:          { w: '**', fallback: '太字テキスト' },
-        italic:        { w: '*',  fallback: '斜体テキスト' },
-        strikethrough: { w: '~~', fallback: 'テキスト' }
-    };
-    const prefixMap = {
-        h1:    '# ',
-        h2:    '## ',
-        h3:    '### ',
-        ul:    '- ',
-        ol:    '1. ',
-        task:  '- [ ] ',
-        quote: '> '
-    };
-
-    if (wrapMap[action]) {
-        const w = wrapMap[action].w;
-        // Toggle: unwrap if selection is already wrapped
+    if (WRAP_MAP[action]) {
+        const w = WRAP_MAP[action].w;
         if (sel && sel.startsWith(w) && sel.endsWith(w) && sel.length > w.length * 2) {
             cm.replaceSelection(sel.slice(w.length, -w.length));
         } else {
-            cm.replaceSelection(w + (sel || wrapMap[action].fallback) + w);
+            cm.replaceSelection(w + (sel || WRAP_MAP[action].fallback) + w);
         }
-    } else if (prefixMap[action]) {
-        const p = prefixMap[action];
+    } else if (PREFIX_MAP[action]) {
+        const p = PREFIX_MAP[action];
         if (line.indexOf(p) === 0) {
             cm.replaceRange('', { line: cur.line, ch: 0 }, { line: cur.line, ch: p.length });
         } else {
@@ -306,17 +313,22 @@ function applyFormat(action) {
 }
 
 /* ── File operations ─────────────────────────────────────────── */
-function saveFile() {
-    const content = cm.getValue();
-    const blob    = new Blob([content], { type: 'text/markdown;charset=utf-8' });
-    const url     = URL.createObjectURL(blob);
-    const a       = document.createElement('a');
-    a.href        = url;
-    a.download    = 'document.md';
+function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a   = document.createElement('a');
+    a.href     = url;
+    a.download = filename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+}
+
+function saveFile() {
+    downloadBlob(
+        new Blob([cm.getValue()], { type: 'text/markdown;charset=utf-8' }),
+        'document.md'
+    );
 }
 
 function exportHtml() {
@@ -327,15 +339,7 @@ function exportHtml() {
         + 'table{border-collapse:collapse;width:100%}th,td{padding:8px 12px;border:1px solid #d0d7de}'
         + 'img{max-width:100%}</style></head><body>'
         + previewEl.innerHTML + '</body></html>';
-    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href     = url;
-    a.download = 'document.html';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    downloadBlob(new Blob([html], { type: 'text/html;charset=utf-8' }), 'document.html');
 }
 
 saveBtn.addEventListener('click', saveFile);
@@ -403,7 +407,7 @@ document.addEventListener('keydown', function(e) {
 
 /* ── Init ────────────────────────────────────────────────────── */
 applyTheme(appTheme);
-updateStats(appContent);
+updateStats(cm.getValue());
 editorPane.classList.add('active');
 setTimeout(function() { cm.refresh(); }, 300);
 
@@ -412,6 +416,8 @@ setTimeout(function() { cm.refresh(); }, 300);
 /* ── Service Worker ──────────────────────────────────────────── */
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
-        navigator.serviceWorker.register('sw.js').catch(function() {});
+        navigator.serviceWorker.register('sw.js').catch(function(e) {
+            console.warn('SW registration failed', e);
+        });
     });
 }
